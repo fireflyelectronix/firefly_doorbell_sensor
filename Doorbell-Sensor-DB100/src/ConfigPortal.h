@@ -1,23 +1,14 @@
-#include <FS.h>                   //this needs to be first, or it all crashes and burns...
-
-#include <ESP8266WiFi.h>          //https://github.com/esp8266/Arduino
-
-//needed for library
 #include <DNSServer.h>
 #include <ESP8266WebServer.h>
-#include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
-
+#include "WiFiManager.h"          //https://github.com/tzapu/WiFiManager
 #include <ArduinoJson.h>          //https://github.com/bblanchon/ArduinoJson
 
 //define your default values here, if there are different values in config.json, they are overwritten.
-//length should be max size + 1 
-char mqtt_server[40];
-char mqtt_port[6] = "8080";
-char blynk_token[33] = "YOUR_BLYNK_TOKEN";
-//default custom static IP
-char static_ip[16] = "10.0.1.56";
-char static_gw[16] = "10.0.1.1";
-char static_sn[16] = "255.255.255.0";
+char mqtt_server[40] = "mqtt.gbridge.kappelt.net";
+char mqtt_port[6] = "8883";
+char mqtt_username[20];
+char mqtt_password[20];
+char mqtt_topic[40];
 
 //flag for saving data
 bool shouldSaveConfig = false;
@@ -28,11 +19,8 @@ void saveConfigCallback () {
   shouldSaveConfig = true;
 }
 
-void setup() {
-  // put your setup code here, to run once:
-  Serial.begin(115200);
-  Serial.println();
-
+//on demand configPortal
+void configPortal (){
   //clean FS, for testing
   //SPIFFS.format();
 
@@ -60,44 +48,31 @@ void setup() {
 
           strcpy(mqtt_server, json["mqtt_server"]);
           strcpy(mqtt_port, json["mqtt_port"]);
-          strcpy(blynk_token, json["blynk_token"]);
+          strcpy(mqtt_username, json["mqtt_username"]);
+          strcpy(mqtt_password, json["mqtt_password"]);
+          strcpy(mqtt_topic, json["mqtt_topic"]);
 
-          if(json["ip"]) {
-            Serial.println("setting custom ip from config");
-            //static_ip = json["ip"];
-            strcpy(static_ip, json["ip"]);
-            strcpy(static_gw, json["gateway"]);
-            strcpy(static_sn, json["subnet"]);
-            //strcat(static_ip, json["ip"]);
-            //static_gw = json["gateway"];
-            //static_sn = json["subnet"];
-            Serial.println(static_ip);
-/*            Serial.println("converting ip");
-            IPAddress ip = ipFromCharArray(static_ip);
-            Serial.println(ip);*/
-          } else {
-            Serial.println("no custom ip in config");
-          }
         } else {
           Serial.println("failed to load json config");
         }
+        configFile.close();
       }
     }
   } else {
     Serial.println("failed to mount FS");
   }
   //end read
-  Serial.println(static_ip);
-  Serial.println(blynk_token);
-  Serial.println(mqtt_server);
+
 
 
   // The extra parameters to be configured (can be either global or just in the setup)
   // After connecting, parameter.getValue() will get you the configured value
   // id/name placeholder/prompt default length
   WiFiManagerParameter custom_mqtt_server("server", "mqtt server", mqtt_server, 40);
-  WiFiManagerParameter custom_mqtt_port("port", "mqtt port", mqtt_port, 5);
-  WiFiManagerParameter custom_blynk_token("blynk", "blynk token", blynk_token, 34);
+  WiFiManagerParameter custom_mqtt_port("port", "mqtt port", mqtt_port, 6);
+  WiFiManagerParameter custom_mqtt_username("username", "mqtt username", mqtt_username, 40);
+  WiFiManagerParameter custom_mqtt_password("password", "mqtt password", mqtt_password, 40);
+  WiFiManagerParameter custom_mqtt_topic("topic", "mqtt topic", mqtt_topic, 40);
 
   //WiFiManager
   //Local intialization. Once its business is done, there is no need to keep it around
@@ -107,35 +82,32 @@ void setup() {
   wifiManager.setSaveConfigCallback(saveConfigCallback);
 
   //set static ip
-  IPAddress _ip,_gw,_sn;
-  _ip.fromString(static_ip);
-  _gw.fromString(static_gw);
-  _sn.fromString(static_sn);
+  //wifiManager.setSTAStaticIPConfig(IPAddress(10,0,1,99), IPAddress(10,0,1,1), IPAddress(255,255,255,0));
 
-  wifiManager.setSTAStaticIPConfig(_ip, _gw, _sn);
-  
   //add all your parameters here
   wifiManager.addParameter(&custom_mqtt_server);
   wifiManager.addParameter(&custom_mqtt_port);
-  wifiManager.addParameter(&custom_blynk_token);
+  wifiManager.addParameter(&custom_mqtt_username);
+  wifiManager.addParameter(&custom_mqtt_password);
+  wifiManager.addParameter(&custom_mqtt_topic);
 
   //reset settings - for testing
   //wifiManager.resetSettings();
 
   //set minimu quality of signal so it ignores AP's under that quality
   //defaults to 8%
-  wifiManager.setMinimumSignalQuality();
-  
+  //wifiManager.setMinimumSignalQuality();
+
   //sets timeout until configuration portal gets turned off
   //useful to make it all retry or go to sleep
   //in seconds
-  //wifiManager.setTimeout(120);
+  wifiManager.setTimeout(180);
 
   //fetches ssid and pass and tries to connect
   //if it does not connect it starts an access point with the specified name
   //here  "AutoConnectAP"
   //and goes into a blocking loop awaiting configuration
-  if (!wifiManager.autoConnect("AutoConnectAP", "password")) {
+  if (!wifiManager.autoConnect("Firefly")) {
     Serial.println("failed to connect and hit timeout");
     delay(3000);
     //reset and try again, or maybe put it to deep sleep
@@ -149,7 +121,9 @@ void setup() {
   //read updated parameters
   strcpy(mqtt_server, custom_mqtt_server.getValue());
   strcpy(mqtt_port, custom_mqtt_port.getValue());
-  strcpy(blynk_token, custom_blynk_token.getValue());
+  strcpy(mqtt_username, custom_mqtt_username.getValue());
+  strcpy(mqtt_password, custom_mqtt_password.getValue());
+  strcpy(mqtt_topic, custom_mqtt_topic.getValue());
 
   //save the custom parameters to FS
   if (shouldSaveConfig) {
@@ -158,18 +132,16 @@ void setup() {
     JsonObject& json = jsonBuffer.createObject();
     json["mqtt_server"] = mqtt_server;
     json["mqtt_port"] = mqtt_port;
-    json["blynk_token"] = blynk_token;
-
-    json["ip"] = WiFi.localIP().toString();
-    json["gateway"] = WiFi.gatewayIP().toString();
-    json["subnet"] = WiFi.subnetMask().toString();
+    json["mqtt_username"] = mqtt_username;
+    json["mqtt_password"] = mqtt_password;
+    json["mqtt_topic"] = mqtt_topic;
 
     File configFile = SPIFFS.open("/config.json", "w");
     if (!configFile) {
       Serial.println("failed to open config file for writing");
     }
 
-    json.prettyPrintTo(Serial);
+    json.printTo(Serial);
     json.printTo(configFile);
     configFile.close();
     //end save
@@ -177,12 +149,5 @@ void setup() {
 
   Serial.println("local ip");
   Serial.println(WiFi.localIP());
-  Serial.println(WiFi.gatewayIP());
-  Serial.println(WiFi.subnetMask());
-}
-
-void loop() {
-  // put your main code here, to run repeatedly:
-
 
 }
