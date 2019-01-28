@@ -68,17 +68,20 @@ void loop() {
     if (buttonReading != buttonState) {
       buttonState = buttonReading;
       if (buttonState == LOW) {
-        Serial.println("Erasing WiFi Credentials");
-        for (int i = 1; i <= 3; i++) {    //Blink the LED 3 times
-          digitalWrite(4, HIGH);
-          delay(300);
-          digitalWrite(4, LOW);
-          delay(300);
-          }
-        Serial.println("Erasing WiFi Credentials");
-        WiFi.disconnect(true);
-        delay(200);
-        ESP.reset();
+        unsigned long currentMillis = millis();
+        if ((currentMillis - lastDebounceTime >= 1000)) {
+          Serial.println("Erasing WiFi Credentials");
+          for (int i = 1; i <= 3; i++) {    //Blink the LED 3 times
+            digitalWrite(4, HIGH);
+            delay(300);
+            digitalWrite(4, LOW);
+            delay(300);
+            }
+          Serial.println("Erasing WiFi Credentials");
+          WiFi.disconnect(true);
+          delay(200);
+          ESP.reset();
+        }
       }
     }
   }
