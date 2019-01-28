@@ -70,8 +70,8 @@ void loop() {
     }
     if (buttonState == LOW) {
       unsigned long currentMillis = millis();
-      if ((currentMillis - lastDebounceTime >= 2000)) {
-        for (int i = 1; i <= 3; i++) {    //Blink the LED 3 times
+      if ((currentMillis - lastDebounceTime >= 2000)) { //if the button is pressed for 2 seconds, blink led 3 times and reset wifi credentials
+        for (int i = 1; i <= 3; i++) {   
           digitalWrite(4, HIGH);
           delay(300);
           digitalWrite(4, LOW);
@@ -85,4 +85,5 @@ void loop() {
     }
   }
   lastButtonState = buttonReading;    //save the button reading for the next time through the loop
-}
+
+}   //end of the void loop function
