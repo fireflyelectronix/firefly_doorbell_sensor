@@ -158,7 +158,7 @@ void WiFiManager::setupConfigPortal() {
 }
 
 boolean WiFiManager::autoConnect() {
-  String ssid = "ESP" + String(ESP.getChipId());
+  String ssid = "Firefly" + String(ESP.getChipId());
   return autoConnect(ssid.c_str(), NULL);
 }
 
@@ -192,7 +192,7 @@ boolean WiFiManager::configPortalHasTimeout(){
 }
 
 boolean WiFiManager::startConfigPortal() {
-  String ssid = "ESP" + String(ESP.getChipId());
+  String ssid = "Firefly" + String(ESP.getChipId());
   return startConfigPortal(ssid.c_str(), NULL);
 }
 

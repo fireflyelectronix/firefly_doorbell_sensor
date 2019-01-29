@@ -46,7 +46,6 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
   pinMode(pin_s1, INPUT_PULLUP);
-  configPortal();
   client.setServer(mqtt_server, atoi(mqtt_port));
 }
 
@@ -60,11 +59,11 @@ void loop() {
   statemachine_s1();
 
   if (state_s1 == 5) {
-    //if there is a short press
+    //if there is a short press reset device
   }
 
   if (state_s1 == 6) {
-    //if there is a long press
+    configPortal();
   }
 
 
