@@ -1,4 +1,4 @@
-#include <FS.h>                   //this needs to be first, or it all crashes and burns...
+ #include <FS.h>                   //this needs to be first, or it all crashes and burns...
 #include <ESP8266WiFi.h>          //https://github.com/esp8266/Arduino
 #include <PubSubClient.h>         //MQTT library
 #include "src/ConfigPortal.h"     //all the config portal code moved here to keep the main sketch clean. Based on WiFiManager
@@ -34,9 +34,43 @@ void reconnect() {
       Serial.print("failed, rc=");
       Serial.print(client.state());
       Serial.println(" try again in 3 seconds");
+      for (int i = 1; i <= 4; i++) {  //flash LED four times 
+          digitalWrite(4, HIGH);
+          delay(300);
+          digitalWrite(4, LOW);
+          delay(300);
+        }
       // Wait 3 seconds before retrying
       delay(3000);
     }
+     //read the state of the button
+    int buttonReading = digitalRead(buttonPin);
+
+    if (buttonReading != lastButtonState) {
+      lastDebounceTime = millis();        //set the last time a button was pressed to now
+    }
+
+    if ((millis() - lastDebounceTime) > debounceDelay) {
+      if (buttonReading != buttonState) {
+        buttonState = buttonReading;
+      }
+    if (buttonState == LOW) {
+      unsigned long currentMillis = millis();
+      if ((currentMillis - lastDebounceTime >= 2000)) { //if the button is pressed for 2 seconds, blink led 3 times and reset wifi credentials
+        for (int i = 1; i <= 3; i++) {   
+          digitalWrite(4, HIGH);
+          delay(300);
+          digitalWrite(4, LOW);
+          delay(300);
+        }
+        Serial.println("Erasing WiFi Credentials");
+        WiFi.disconnect(true);
+        delay(200);
+        ESP.restart();
+      }
+    }
+  }
+  lastButtonState = buttonReading;    //save the button reading for the next time through the loop
   }
 }
 
@@ -80,7 +114,7 @@ void loop() {
         Serial.println("Erasing WiFi Credentials");
         WiFi.disconnect(true);
         delay(200);
-        ESP.reset();
+        ESP.restart();
       }
     }
   }
