@@ -4,12 +4,16 @@
 #include "src/ConfigPortal.h"     //all the config portal code moved here to keep the main sketch clean. Based on WiFiManager
 #include "src/Blinker.h"          //Library to help with managing the LED blink. Uses millis() instead of delay()
 
+//varialbles for switch 1 (s1)
+int state_s1 = 0;
+int prev_state_s1 = 0;
+int pin_s1 = 0;
+int val_s1 = 0;
+unsigned long t_s1 = 0;
+unsigned long t_0_s1 = 0;
+unsigned long bounce_delay_s1 = 10;
+unsigned long hold_delay_s1 = 2000;
 
-const int buttonPin = 0;              //the button for resetting wifi credentials
-int buttonState;                      //the current state of the button input
-int lastButtonState = HIGH;           //the previouse reading from the button input
-unsigned long lastDebounceTime = 0;   // the last time the output pin was toggled
-unsigned long debounceDelay = 50;     // the debounce time; increase if the output flickers
 
 Blinker led1(4, 500, 500);            //create a new blink pattern for the led on pin 4. On for 500ms off for 500ms
 
@@ -34,90 +38,79 @@ void reconnect() {
       Serial.print("failed, rc=");
       Serial.print(client.state());
       Serial.println(" try again in 3 seconds");
-      for (int i = 1; i <= 4; i++) {  //flash LED four times 
-          digitalWrite(4, HIGH);
-          delay(300);
-          digitalWrite(4, LOW);
-          delay(300);
-        }
-      // Wait 3 seconds before retrying
-      delay(3000);
-    }
-     //read the state of the button
-    int buttonReading = digitalRead(buttonPin);
-
-    if (buttonReading != lastButtonState) {
-      lastDebounceTime = millis();        //set the last time a button was pressed to now
-    }
-
-    if ((millis() - lastDebounceTime) > debounceDelay) {
-      if (buttonReading != buttonState) {
-        buttonState = buttonReading;
       }
-    if (buttonState == LOW) {
-      unsigned long currentMillis = millis();
-      if ((currentMillis - lastDebounceTime >= 2000)) { //if the button is pressed for 2 seconds, blink led 3 times and reset wifi credentials
-        for (int i = 1; i <= 3; i++) {   
-          digitalWrite(4, HIGH);
-          delay(300);
-          digitalWrite(4, LOW);
-          delay(300);
-        }
-        Serial.println("Erasing WiFi Credentials");
-        WiFi.disconnect(true);
-        delay(200);
-        ESP.restart();
-      }
-    }
-  }
-  lastButtonState = buttonReading;    //save the button reading for the next time through the loop
   }
 }
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
-  pinMode(buttonPin, INPUT_PULLUP);
+  pinMode(pin_s1, INPUT_PULLUP);
   configPortal();
   client.setServer(mqtt_server, atoi(mqtt_port));
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  yield();
 
   if (!client.connected()) {
     reconnect();
   }
   client.loop();
 
-  //read the state of the button
-  int buttonReading = digitalRead(buttonPin);
+  statemachine_s1();
 
-  if (buttonReading != lastButtonState) {
-    lastDebounceTime = millis();        //set the last time a button was pressed to now
+  if (state_s1 == 5) {
+    //if there is a short press
   }
 
-  if ((millis() - lastDebounceTime) > debounceDelay) {
-    if (buttonReading != buttonState) {
-      buttonState = buttonReading;
-    }
-    if (buttonState == LOW) {
-      unsigned long currentMillis = millis();
-      if ((currentMillis - lastDebounceTime >= 2000)) { //if the button is pressed for 2 seconds, blink led 3 times and reset wifi credentials
-        for (int i = 1; i <= 3; i++) {   
-          digitalWrite(4, HIGH);
-          delay(300);
-          digitalWrite(4, LOW);
-          delay(300);
-        }
-        Serial.println("Erasing WiFi Credentials");
-        WiFi.disconnect(true);
-        delay(200);
-        ESP.restart();
-      }
-    }
+  if (state_s1 == 6) {
+    //if there is a long press
   }
-  lastButtonState = buttonReading;    //save the button reading for the next time through the loop
+
 
 }   //end of the void loop function
+
+void statemachine_s1(){
+  val_s1 = digitalRead(pin_s1);
+  prev_state_s1 = state_s1;
+
+  switch (state_s1) {
+    case 0: //Reset the state
+      state_s1 = 1;
+    break;
+
+    case 1: //waiting to see if the switch goes LOW
+      if (val_s1 == LOW) {state_s1 = 2;}
+    break;
+
+    case 2: //the switch has sensed a LOW. Start the clock
+      t_0_s1 = millis();
+      state_s1 = 3;
+    break;
+
+    case 3: //debounce the switch
+      t_s1 = millis();
+      if (t_s1 - t_0_s1 > debounceDelay) {state_s1 = 4;}
+      if (val_s1 == HIGH) {state_s1 = 0;}
+    break;
+
+    case 4: //check how the button is pressed short vs long press
+      t_s1 = millis();
+      if (val_s1 == HIGH) {state_s1 = 5;}
+      if (t_s1 - t_0_s1 > hold_delay_s1) {state_s1 = 6;}
+    break;
+
+    case 5: //short press state then reset the state to 0
+      state_s1 = 0;
+    break;
+
+    case 6: //long press state then go to wait state
+      state_s1 = 7;
+    break;
+
+    case 7: //wait for switch to be released and reset state
+      if (val_s1 == HIGH) {state_s1 = 0;}
+    break;
+  }
+
+}
