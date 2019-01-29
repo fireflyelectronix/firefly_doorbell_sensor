@@ -223,7 +223,22 @@ boolean  WiFiManager::startConfigPortal(char const *apName, char const *apPasswo
   connect = false;
   setupConfigPortal();
 
+  unsigned long previousTime = 0;
+  const long interval = 1000;
+  int ledState = LOW;
+
   while(1){
+
+    unsigned long currentTime = millis();
+    if (currentTime - previousTime >= interval) {
+      previousTime = currentTime;
+      if (ledState == LOW) {
+        ledState = HIGH;
+      } else {
+        ledState = LOW;
+      }
+      digitalWrite(4, ledState);
+    }
 
     // check if timeout
     if(configPortalHasTimeout()) break;
@@ -268,6 +283,8 @@ boolean  WiFiManager::startConfigPortal(char const *apName, char const *apPasswo
 
   server.reset();
   dnsServer.reset();
+
+  digitalWrite(4, LOW);
 
   return  WiFi.status() == WL_CONNECTED;
 }
