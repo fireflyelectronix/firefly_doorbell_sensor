@@ -4,8 +4,8 @@
 #include <ArduinoJson.h>          //https://github.com/bblanchon/ArduinoJson
 
 //define your default values here, if there are different values in config.json, they are overwritten.
-char mqtt_server[40] = "mqtt.gbridge.kappelt.net";
-char mqtt_port[6] = "8883";
+char mqtt_server[40] = "mqtt.gbridge.io";
+char mqtt_port[6] = "1883";
 char mqtt_username[20];
 char mqtt_password[20];
 char mqtt_topic[40];
@@ -101,7 +101,7 @@ void configPortal (){
   //sets timeout until configuration portal gets turned off
   //useful to make it all retry or go to sleep
   //in seconds
-  wifiManager.setTimeout(180);
+  //wifiManager.setTimeout(180);
 
   //fetches ssid and pass and tries to connect
   //if it does not connect it starts an access point with the specified name

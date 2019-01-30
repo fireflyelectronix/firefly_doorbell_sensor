@@ -13,6 +13,12 @@ unsigned long t_0_s1 = 0;
 #define bounce_delay_s1 10
 #define hold_delay_s1 2000 //Hold the button for 2 seconds to enter config portal
 
+unsigned long client_timer = 0;
+const long client_interval = 2000;
+
+unsigned long loop_timer = 0;
+const long loop_interval = 8000;
+
 WiFiClient wifiClient;
 PubSubClient client(wifiClient);
 
@@ -28,7 +34,7 @@ void reconnect() {
     // Once connected, publish an announcement...
     client.publish(mqtt_topic, "ring");
   } else {
-    Serial.print("MQTT Connection failed, rc=");
+    Serial.println("MQTT Connection failed, rc=");
     Serial.print(client.state());
     }
 }
@@ -44,12 +50,15 @@ void setup() {
 
 void loop() {
 
-  unsigned long loop_timer = millis();
+  loop_timer = millis();
 
-  while(millis() - loop_timer < 6000) { //Loop through for 6 seconds then go to sleep
+  while(millis() - loop_timer < loop_interval) {
 
-    if (!client.connected()) {
-      reconnect();
+    if (millis() - client_timer >= client_interval) {
+      client_timer = millis();
+      if (!client.connected()) {
+        reconnect();
+      }
     }
 
     client.loop();
@@ -63,7 +72,7 @@ void loop() {
     if (state_s1 == 6) {//if there is a long press, open config portal
       configPortal();
     }
-
+    yield();
   }
 
   Serial.println("Going to sleep");

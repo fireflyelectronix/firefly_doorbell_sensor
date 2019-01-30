@@ -265,6 +265,7 @@ boolean  WiFiManager::startConfigPortal(char const *apName, char const *apPasswo
           //todo: check if any custom parameters actually exist, and check if they really changed maybe
           _savecallback();
         }
+        digitalWrite(4, LOW);
         break;
       }
 
@@ -275,6 +276,7 @@ boolean  WiFiManager::startConfigPortal(char const *apName, char const *apPasswo
           //todo: check if any custom parameters actually exist, and check if they really changed maybe
           _savecallback();
         }
+        digitalWrite(4, LOW);
         break;
       }
     }
