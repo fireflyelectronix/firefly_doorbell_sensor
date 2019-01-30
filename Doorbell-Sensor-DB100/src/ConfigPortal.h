@@ -8,7 +8,7 @@ char mqtt_server[40] = "mqtt.gbridge.io";
 char mqtt_port[6] = "1883";
 char mqtt_username[20];
 char mqtt_password[20];
-char mqtt_topic[40];
+char mqtt_topic[40] = "gBridge/";
 
 //flag for saving data
 bool shouldSaveConfig = false;
@@ -19,8 +19,7 @@ void saveConfigCallback () {
   shouldSaveConfig = true;
 }
 
-//on demand configPortal
-void configPortal (){
+void loadFile() {
   //clean FS, for testing
   //SPIFFS.format();
 
@@ -61,9 +60,11 @@ void configPortal (){
   } else {
     Serial.println("failed to mount FS");
   }
-  //end read
+}
+//end read
 
-
+//on demand configPortal
+void configPortal (){
 
   // The extra parameters to be configured (can be either global or just in the setup)
   // After connecting, parameter.getValue() will get you the configured value

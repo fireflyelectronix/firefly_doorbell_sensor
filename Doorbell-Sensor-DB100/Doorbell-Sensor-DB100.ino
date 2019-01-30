@@ -45,7 +45,13 @@ void setup() {
   pinMode(pin_s1, INPUT_PULLUP);
   pinMode(4, OUTPUT);
   digitalWrite(4, LOW);
+  loadFile();
   client.setServer(mqtt_server, atoi(mqtt_port));
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
 }
 
 void loop() {
@@ -71,6 +77,7 @@ void loop() {
 
     if (state_s1 == 6) {//if there is a long press, open config portal
       configPortal();
+      loop_timer = millis(); //reset the loop timer once we return from the config portal
     }
     yield();
   }
