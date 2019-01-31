@@ -4,11 +4,12 @@
 #include <ArduinoJson.h>          //https://github.com/bblanchon/ArduinoJson
 
 //define your default values here, if there are different values in config.json, they are overwritten.
-char mqtt_server[40] = "mqtt.gbridge.io";
-char mqtt_port[6] = "1883";
+char mqtt_server[40];
+char mqtt_port[6];
 char mqtt_username[20];
 char mqtt_password[20];
-char mqtt_topic[40] = "gBridge/";
+char mqtt_topic[40];
+char ifttt_key[40];
 
 //flag for saving data
 bool shouldSaveConfig = false;
@@ -19,11 +20,9 @@ void saveConfigCallback () {
   shouldSaveConfig = true;
 }
 
-void loadFile() {
-  //clean FS, for testing
-  //SPIFFS.format();
+void loadConfigFile() {
 
-  //read configuration from FS json
+  //read configuration from FS config.json file
   Serial.println("mounting FS...");
 
   if (SPIFFS.begin()) {
@@ -50,6 +49,7 @@ void loadFile() {
           strcpy(mqtt_username, json["mqtt_username"]);
           strcpy(mqtt_password, json["mqtt_password"]);
           strcpy(mqtt_topic, json["mqtt_topic"]);
+          strcpy(ifttt_key, json["ifttt_key"]);
 
         } else {
           Serial.println("failed to load json config");
@@ -74,6 +74,7 @@ void configPortal (){
   WiFiManagerParameter custom_mqtt_username("username", "mqtt username", mqtt_username, 40);
   WiFiManagerParameter custom_mqtt_password("password", "mqtt password", mqtt_password, 40);
   WiFiManagerParameter custom_mqtt_topic("topic", "mqtt topic", mqtt_topic, 40);
+  WiFiManagerParameter custom_ifttt_key("ifttt", "ifttt key", ifttt_key, 40);
 
   //WiFiManager
   //Local intialization. Once its business is done, there is no need to keep it around
@@ -91,6 +92,7 @@ void configPortal (){
   wifiManager.addParameter(&custom_mqtt_username);
   wifiManager.addParameter(&custom_mqtt_password);
   wifiManager.addParameter(&custom_mqtt_topic);
+  wifiManager.addParameter(&custom_ifttt_key);
 
   //reset settings - for testing
   //wifiManager.resetSettings();
@@ -125,6 +127,7 @@ void configPortal (){
   strcpy(mqtt_username, custom_mqtt_username.getValue());
   strcpy(mqtt_password, custom_mqtt_password.getValue());
   strcpy(mqtt_topic, custom_mqtt_topic.getValue());
+  strcpy(ifttt_key, custom_ifttt_key.getValue());
 
   //save the custom parameters to FS
   if (shouldSaveConfig) {
@@ -136,6 +139,7 @@ void configPortal (){
     json["mqtt_username"] = mqtt_username;
     json["mqtt_password"] = mqtt_password;
     json["mqtt_topic"] = mqtt_topic;
+    json["ifttt_key"] = ifttt_key;
 
     File configFile = SPIFFS.open("/config.json", "w");
     if (!configFile) {

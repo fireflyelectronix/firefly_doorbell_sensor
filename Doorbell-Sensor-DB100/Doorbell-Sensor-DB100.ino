@@ -14,10 +14,10 @@ unsigned long t_0_s1 = 0;
 #define hold_delay_s1 2000 //Hold the button for 2 seconds to enter config portal
 
 unsigned long client_timer = 0;
-const long client_interval = 2000;
+const long client_interval = 2000; //check if mqtt client is connected every 2 seconds. reconnect if not connected
 
 unsigned long loop_timer = 0;
-const long loop_interval = 8000;
+const long loop_interval = 8000; //run loop for 8 seconds then go to sleep
 
 WiFiClient wifiClient;
 PubSubClient client(wifiClient);
@@ -45,13 +45,8 @@ void setup() {
   pinMode(pin_s1, INPUT_PULLUP);
   pinMode(4, OUTPUT);
   digitalWrite(4, LOW);
-  loadFile();
+  loadConfigFile();
   client.setServer(mqtt_server, atoi(mqtt_port));
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
 }
 
 void loop() {
