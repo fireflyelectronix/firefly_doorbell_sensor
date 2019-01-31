@@ -1,5 +1,6 @@
 #include <FS.h>                   //this needs to be first, or it all crashes and burns...
 #include <ESP8266WiFi.h>          //https://github.com/esp8266/Arduino
+#include <ESP8266HTTPClient.h>    //library for HTTP client
 #include <PubSubClient.h>         //MQTT library
 #include "src/ConfigPortal.h"     //all the config portal code moved here to keep the main sketch clean. Based on WiFiManager
 
@@ -19,11 +20,17 @@ const long client_interval = 2000; //check if mqtt client is connected every 2 s
 unsigned long loop_timer = 0;
 const long loop_interval = 8000; //run loop for 8 seconds then go to sleep
 
+char ifttt_event[10] = "doorbell";
+bool ifttt_sent = false;
+
 WiFiClient wifiClient;
+HTTPClient http;
 PubSubClient client(wifiClient);
 
   //function used to reconnect the mqtt client. called in loop.
 void reconnect() {
+
+  client.setServer(mqtt_server, atoi(mqtt_port)); //setup the mqtt target server 
   Serial.print("Attempting MQTT connection...");
     // Create the clientID using the ESP8266 Chip ID
   String clientId = "FireFlyClient-";
@@ -33,6 +40,7 @@ void reconnect() {
     Serial.println("MQTT connected");
     // Once connected, publish an announcement...
     client.publish(mqtt_topic, "ring");
+    Serial.println("MQTT topic published");
   } else {
     Serial.println("MQTT Connection failed, rc=");
     Serial.print(client.state());
@@ -46,7 +54,6 @@ void setup() {
   pinMode(4, OUTPUT);
   digitalWrite(4, LOW);
   loadConfigFile();
-  client.setServer(mqtt_server, atoi(mqtt_port));
 }
 
 void loop() {
@@ -55,14 +62,26 @@ void loop() {
 
   while(millis() - loop_timer < loop_interval) {
 
-    if (millis() - client_timer >= client_interval) {
-      client_timer = millis();
-      if (!client.connected()) {
-        reconnect();
+    if (strlen(mqtt_topic) != 0) { //if there is an mqtt topic, then send mqtt message
+      if (millis() - client_timer >= client_interval) {
+        client_timer = millis();
+        if (!client.connected()) {
+          reconnect();
+        }
       }
     }
 
-    client.loop();
+    //client.loop(); may not be needed since we do not need to subcribe to incomming messages.
+
+    if (strlen(ifttt_key) != 0) { //if there is an ifttt key, then send the http post
+      if (ifttt_sent == false) {
+        http.begin(wifiClient, "http://maker.ifttt.com/trigger/" + String(ifttt_event) + "/with/key/" + String(ifttt_key));
+        http.POST("Hello");
+        http.end();
+        ifttt_sent == true;
+        Serial.println("IFTTT Trigger Sent");
+      }  
+    }
 
     statemachine_s1();
 
