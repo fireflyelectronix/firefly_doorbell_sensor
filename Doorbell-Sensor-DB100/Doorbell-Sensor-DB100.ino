@@ -1,4 +1,4 @@
-#include <FS.h>                   //this needs to be first, or it all crashes and burns...
+#include <FS.h>                   //SPIFFS File System to store files
 #include <ESP8266WiFi.h>          //https://github.com/esp8266/Arduino
 #include <ESP8266HTTPClient.h>    //library for HTTP client
 #include <PubSubClient.h>         //MQTT library
@@ -30,7 +30,7 @@ PubSubClient client(wifiClient);
   //function used to reconnect the mqtt client. called in loop.
 void reconnect() {
 
-  client.setServer(mqtt_server, atoi(mqtt_port)); //setup the mqtt target server 
+  client.setServer(mqtt_server, atoi(mqtt_port)); //setup the mqtt target server
   Serial.print("Attempting MQTT connection...");
     // Create the clientID using the ESP8266 Chip ID
   String clientId = "FireFlyClient-";
@@ -80,7 +80,7 @@ void loop() {
         http.end();
         ifttt_sent == true;
         Serial.println("IFTTT Trigger Sent");
-      }  
+      }
     }
 
     statemachine_s1();

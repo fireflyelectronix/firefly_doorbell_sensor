@@ -461,7 +461,7 @@ void WiFiManager::handleRoot() {
 void WiFiManager::handleWifi(boolean scan) {
 
   String page = FPSTR(HTTP_HEAD);
-  page.replace("{v}", "Config ESP");
+  page.replace("{v}", "Config Device");
   page += FPSTR(HTTP_SCRIPT);
   page += FPSTR(HTTP_STYLE);
   page += _customHeadElement;
@@ -543,6 +543,7 @@ void WiFiManager::handleWifi(boolean scan) {
   }
 
   page += FPSTR(HTTP_FORM_START);
+  page += F("<p>MQTT/IFTTT Settings</p>");
   char parLength[5];
   // add the extra parameters to the form
   for (int i = 0; i < _paramsCount; i++) {
