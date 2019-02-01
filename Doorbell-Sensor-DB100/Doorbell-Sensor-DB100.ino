@@ -73,15 +73,18 @@ void loop() {
 
     //client.loop(); may not be needed since we do not need to subcribe to incomming messages.
 
-    if (strlen(ifttt_key) != 0) { //if there is an ifttt key, then send the http post
-      if (ifttt_sent == false) {
-        http.begin(wifiClient, "http://maker.ifttt.com/trigger/" + String(ifttt_event) + "/with/key/" + String(ifttt_key));
-        http.POST("Hello");
-        http.end();
-        ifttt_sent == true;
-        Serial.println("IFTTT Trigger Sent");
-      }
+    if (WiFi.status() == WL_CONNECTED) {
+      if (strlen(ifttt_key) != 0) { //if there is an ifttt key, then send the http post
+        if (ifttt_sent == false) {
+          http.begin(wifiClient, "http://maker.ifttt.com/trigger/" + String(ifttt_event) + "/with/key/" + String(ifttt_key));
+          http.POST("Hello");
+          http.end();
+          ifttt_sent = true;
+          Serial.println("IFTTT Trigger Sent");
+        }
+      } 
     }
+      
 
     statemachine_s1();
 
