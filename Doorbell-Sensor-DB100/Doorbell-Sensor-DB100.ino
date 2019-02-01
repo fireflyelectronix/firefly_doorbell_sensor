@@ -15,22 +15,23 @@ unsigned long t_0_s1 = 0;
 #define hold_delay_s1 2000 //Hold the button for 2 seconds to enter config portal
 
 unsigned long client_timer = 0;
-const long client_interval = 2000; //check if mqtt client is connected every 2 seconds. reconnect if not connected
+const long client_interval = 2000; //only run the http and mqtt clients every 2 seconds
 
 unsigned long loop_timer = 0;
 const long loop_interval = 8000; //run loop for 8 seconds then go to sleep
 
 char ifttt_event[10] = "doorbell";
 bool ifttt_sent = false;
+bool mqtt_sent = false;
 
 WiFiClient wifiClient;
 HTTPClient http;
 PubSubClient client(wifiClient);
 
-  //function used to reconnect the mqtt client. called in loop.
-void reconnect() {
 
-  client.setServer(mqtt_server, atoi(mqtt_port)); //setup the mqtt target server
+void sendMQTT() {
+
+  client.setServer(mqtt_server, atoi(mqtt_port)); //setup the mqtt target server and port 
   Serial.print("Attempting MQTT connection...");
     // Create the clientID using the ESP8266 Chip ID
   String clientId = "FireFlyClient-";
@@ -41,10 +42,21 @@ void reconnect() {
     // Once connected, publish an announcement...
     client.publish(mqtt_topic, "ring");
     Serial.println("MQTT topic published");
+    mqtt_sent = true;
   } else {
     Serial.println("MQTT Connection failed, rc=");
     Serial.print(client.state());
     }
+}
+
+void sendIFTTT() {
+
+  http.begin(wifiClient, "http://maker.ifttt.com/trigger/" + String(ifttt_event) + "/with/key/" + String(ifttt_key));
+  http.POST("Hello");
+  http.end();
+  ifttt_sent = true; //todo - need logic to get the http response before setting this flag.
+  Serial.println("IFTTT Trigger Sent");
+
 }
 
 void setup() {
@@ -62,31 +74,27 @@ void loop() {
 
   while(millis() - loop_timer < loop_interval) {
 
-    if (strlen(mqtt_topic) != 0) { //if there is an mqtt topic, then send mqtt message
-      if (millis() - client_timer >= client_interval) {
-        client_timer = millis();
-        if (!client.connected()) {
-          reconnect();
+    if (millis() - client_timer >= client_interval) { //Only run this periodically based on client_interval
+      client_timer = millis(); //reset the clock starting point
+      if (WiFi.status() == WL_CONNECTED) { //Only run the following once we are connected to wifi
+        if (strlen(mqtt_topic) != 0) { //check if we have a value stored for mqtt setting
+          if (mqtt_sent == false) { //if we haven't published to mqtt, then publish to mqtt server
+            sendMQTT();
+          }
         }
+
+        if (strlen(mqtt_topic) != 0) { //check to see if there a value for the ifttt key
+          if (ifttt_sent == false) { //if we haven't sent an ifttt webhook, then send one
+            sendIFTTT();
+          }
+        }
+
       }
     }
 
     //client.loop(); may not be needed since we do not need to subcribe to incomming messages.
 
-    if (WiFi.status() == WL_CONNECTED) {
-      if (strlen(ifttt_key) != 0) { //if there is an ifttt key, then send the http post
-        if (ifttt_sent == false) {
-          http.begin(wifiClient, "http://maker.ifttt.com/trigger/" + String(ifttt_event) + "/with/key/" + String(ifttt_key));
-          http.POST("Hello");
-          http.end();
-          ifttt_sent = true;
-          Serial.println("IFTTT Trigger Sent");
-        }
-      } 
-    }
-      
-
-    statemachine_s1();
+    s1buttonState(); //check the state of the button
 
     if (state_s1 == 5) {
       //nothing here yet for short press. maybe for reset
@@ -101,10 +109,11 @@ void loop() {
 
   Serial.println("Going to sleep");
   ESP.deepSleep(0);
+  delay(100); //the module likes to have a delay after sending deepsleep.
 
-}   //end of the void loop function
+}
 
-void statemachine_s1(){
+void s1buttonState(){
   val_s1 = digitalRead(pin_s1);
   prev_state_s1 = state_s1;
 
