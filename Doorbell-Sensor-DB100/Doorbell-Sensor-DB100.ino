@@ -30,8 +30,11 @@ PubSubClient client(wifiClient);
 
 
 void sendMQTT() {
+  
+  if (!client.connected()) {
+    client.setServer(mqtt_server, atoi(mqtt_port)); //setup the mqtt target server and port
+  }
 
-  client.setServer(mqtt_server, atoi(mqtt_port)); //setup the mqtt target server and port 
   Serial.print("Attempting MQTT connection...");
     // Create the clientID using the ESP8266 Chip ID
   String clientId = "FireFlyClient-";
