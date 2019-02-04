@@ -12,6 +12,8 @@
 
 #include "WiFiManager.h"
 
+const char sw_ver[10] = "1.0"; //software version
+
 WiFiManagerParameter::WiFiManagerParameter(const char *custom) {
   _id = NULL;
   _placeholder = NULL;
@@ -704,6 +706,9 @@ void WiFiManager::handleInfo() {
   page += F("</dd>");
   page += F("<dt>Station MAC</dt><dd>");
   page += WiFi.macAddress();
+  page += F("</dd>");
+  page += F("<dt>Software Version</dt><dd>");
+  page += sw_ver;
   page += F("</dd>");
   page += F("</dl>");
   page += FPSTR(HTTP_END);

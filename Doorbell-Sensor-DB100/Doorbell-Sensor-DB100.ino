@@ -30,7 +30,7 @@ PubSubClient client(wifiClient);
 
 
 void sendMQTT() {
-  
+
   if (!client.connected()) {
     client.setServer(mqtt_server, atoi(mqtt_port)); //setup the mqtt target server and port
   }
