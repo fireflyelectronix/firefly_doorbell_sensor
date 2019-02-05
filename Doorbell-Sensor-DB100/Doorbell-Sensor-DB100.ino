@@ -86,7 +86,7 @@ void loop() {
           }
         }
 
-        if (strlen(mqtt_topic) != 0) { //check to see if there a value for the ifttt key
+        if (strlen(ifttt_key) != 0) { //check to see if there a value for the ifttt key
           if (ifttt_sent == false) { //if we haven't sent an ifttt webhook, then send one
             sendIFTTT();
           }
