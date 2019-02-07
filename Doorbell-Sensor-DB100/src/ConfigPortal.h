@@ -4,13 +4,13 @@
 #include <ArduinoJson.h>          //https://github.com/bblanchon/ArduinoJson
 
 //define your default values here, if there are different values in config.json, they are overwritten.
-char mqtt_server[40];
+char mqtt_server[100];
 char mqtt_port[6];
 char mqtt_username[20];
 char mqtt_password[20];
-char mqtt_topic[40];
-char http_addr[40];
-char http_post[20];
+char mqtt_topic[100];
+char http_addr[200];
+char http_post[50];
 
 //flag for saving data
 bool shouldSaveConfig = false;
@@ -71,13 +71,13 @@ void configPortal (){
   // The extra parameters to be configured (can be either global or just in the setup)
   // After connecting, parameter.getValue() will get you the configured value
   // id/name placeholder/prompt default length
-  WiFiManagerParameter custom_mqtt_server("server", "mqtt server", mqtt_server, 40);
+  WiFiManagerParameter custom_mqtt_server("server", "mqtt server", mqtt_server, 100);
   WiFiManagerParameter custom_mqtt_port("port", "mqtt port", mqtt_port, 6);
-  WiFiManagerParameter custom_mqtt_username("username", "mqtt username", mqtt_username, 40);
-  WiFiManagerParameter custom_mqtt_password("password", "mqtt password", mqtt_password, 40);
-  WiFiManagerParameter custom_mqtt_topic("topic", "mqtt topic", mqtt_topic, 40);
-  WiFiManagerParameter custom_http_addr("http", "http addr", http_addr, 40);
-  WiFiManagerParameter custom_http_post("post", "http post", http_post, 20);
+  WiFiManagerParameter custom_mqtt_username("username", "mqtt username", mqtt_username, 20);
+  WiFiManagerParameter custom_mqtt_password("password", "mqtt password", mqtt_password, 20);
+  WiFiManagerParameter custom_mqtt_topic("topic", "mqtt topic", mqtt_topic, 100);
+  WiFiManagerParameter custom_http_addr("http", "http addr", http_addr, 200);
+  WiFiManagerParameter custom_http_post("post", "http post", http_post, 50);
 
   //WiFiManager
   //Local intialization. Once its business is done, there is no need to keep it around
