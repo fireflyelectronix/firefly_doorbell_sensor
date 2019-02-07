@@ -545,7 +545,7 @@ void WiFiManager::handleWifi(boolean scan) {
   }
 
   page += FPSTR(HTTP_FORM_START);
-  page += F("<b>MQTT/IFTTT Settings</b>");
+  page += F("<b>MQTT/HTTP Settings</b>");
   char parLength[5];
   // add the extra parameters to the form
   for (int i = 0; i < _paramsCount; i++) {

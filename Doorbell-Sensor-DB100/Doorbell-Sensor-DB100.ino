@@ -20,8 +20,7 @@ const long client_interval = 2000; //only run the http and mqtt clients every 2 
 unsigned long loop_timer = 0;
 const long loop_interval = 8000; //run loop for 8 seconds then go to sleep
 
-char ifttt_event[10] = "doorbell";
-bool ifttt_sent = false;
+bool http_sent = false;
 bool mqtt_sent = false;
 
 WiFiClient wifiClient;
@@ -52,13 +51,13 @@ void sendMQTT() {
     }
 }
 
-void sendIFTTT() {
+void sendHTTP() {
 
-  http.begin(wifiClient, "http://maker.ifttt.com/trigger/" + String(ifttt_event) + "/with/key/" + String(ifttt_key));
-  http.POST("Hello");
+  http.begin(wifiClient, http_addr);
+  http.POST(http_post);
   http.end();
-  ifttt_sent = true; //todo - need logic to get the http response before setting this flag.
-  Serial.println("IFTTT Trigger Sent");
+  http_sent = true; //todo - need logic to get the http response before setting this flag.
+  Serial.println("HTTP Post Sent");
 
 }
 
@@ -86,9 +85,9 @@ void loop() {
           }
         }
 
-        if (strlen(ifttt_key) != 0) { //check to see if there a value for the ifttt key
-          if (ifttt_sent == false) { //if we haven't sent an ifttt webhook, then send one
-            sendIFTTT();
+        if (strlen(http_addr) != 0) { //check to see if there a value for the http address
+          if (http_sent == false) { //if we haven't sent an http webhook, then send one
+            sendHTTP();
           }
         }
 
