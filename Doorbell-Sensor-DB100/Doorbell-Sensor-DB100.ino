@@ -54,7 +54,13 @@ void sendMQTT() {
 void sendHTTP() {
 
   http.begin(wifiClient, http_addr);
-  http.POST(http_post);
+  http.addHeader("Content-Type", "application/json");
+  int httpCode = http.POST(""{"value1":"3.1"}"");
+  String payload = http.getString();
+
+  Serial.println(httpCode);
+  Serial.println(payload);
+  
   http.end();
   http_sent = true; //todo - need logic to get the http response before setting this flag.
   Serial.println("HTTP Post Sent");
