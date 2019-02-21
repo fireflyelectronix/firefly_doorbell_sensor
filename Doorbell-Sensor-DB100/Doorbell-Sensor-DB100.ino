@@ -53,17 +53,31 @@ void sendMQTT() {
 
 void sendHTTP() {
 
+  getJSONvoltage();
+
   http.begin(wifiClient, http_addr);
   http.addHeader("Content-Type", "application/json");
-  int httpCode = http.POST(""{"value1":"3.1"}"");
+  int httpCode = http.POST(JSONmessageBuffer);
   String payload = http.getString();
 
   Serial.println(httpCode);
   Serial.println(payload);
-  
+
   http.end();
   http_sent = true; //todo - need logic to get the http response before setting this flag.
   Serial.println("HTTP Post Sent");
+
+}
+
+void getJSONvoltage() {
+
+  int vcc = ESP.getVcc();
+  StaticJsonBuffer<100> jsonBuffer;
+  JsonObject& JSONvoltage = jsonBuffer.createObject();
+  JSONvoltage["value1"] = vcc;
+  JSONvoltage.printTo(Serial);
+  char JSONmessageBuffer[100];
+  JSONvoltage.prettyPrintTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
 
 }
 
@@ -72,6 +86,7 @@ void setup() {
   Serial.begin(115200);
   pinMode(pin_s1, INPUT_PULLUP);
   pinMode(4, OUTPUT);
+  ADC_MODE (ADC_VCC);
   digitalWrite(4, LOW);
   loadConfigFile();
 }
@@ -84,6 +99,8 @@ void loop() {
 
     if (millis() - client_timer >= client_interval) { //Only run this periodically based on client_interval
       client_timer = millis(); //reset the clock starting point
+      int vcc = ESP.getVcc();
+      Serial.println(vcc);
       if (WiFi.status() == WL_CONNECTED) { //Only run the following once we are connected to wifi
         if (strlen(mqtt_topic) != 0) { //check if we have a value stored for mqtt setting
           if (mqtt_sent == false) { //if we haven't published to mqtt, then publish to mqtt server
