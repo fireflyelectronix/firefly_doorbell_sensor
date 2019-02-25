@@ -4,6 +4,8 @@
 #include <PubSubClient.h>         //MQTT library
 #include "src/ConfigPortal.h"     //all the config portal code moved here to keep the main sketch clean. Based on WiFiManager
 
+ADC_MODE (ADC_VCC);  //set the ADC mode of the ESP8266 to read the voltage level
+
 //varialbles for switch 1 (s1)
 int state_s1 = 0;
 int prev_state_s1 = 0;
@@ -20,7 +22,7 @@ const long client_interval = 2000; //only run the http and mqtt clients every 2 
 unsigned long loop_timer = 0;
 const long loop_interval = 8000; //run loop for 8 seconds then go to sleep
 
-bool http_sent = false;
+bool ifttt_sent = false;
 bool mqtt_sent = false;
 
 WiFiClient wifiClient;
@@ -51,25 +53,7 @@ void sendMQTT() {
     }
 }
 
-void sendHTTP() {
-
-  getJSONvoltage();
-
-  http.begin(wifiClient, http_addr);
-  http.addHeader("Content-Type", "application/json");
-  int httpCode = http.POST(JSONmessageBuffer);
-  String payload = http.getString();
-
-  Serial.println(httpCode);
-  Serial.println(payload);
-
-  http.end();
-  http_sent = true; //todo - need logic to get the http response before setting this flag.
-  Serial.println("HTTP Post Sent");
-
-}
-
-void getJSONvoltage() {
+void sendIFTTT() {
 
   int vcc = ESP.getVcc();
   StaticJsonBuffer<100> jsonBuffer;
@@ -79,6 +63,18 @@ void getJSONvoltage() {
   char JSONmessageBuffer[100];
   JSONvoltage.prettyPrintTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
 
+  http.begin(wifiClient, "http://maker.ifttt.com/trigger/doorbell/with/key/" + String(ifttt_key));
+  http.addHeader("Content-Type", "application/json");
+  int httpCode = http.POST(JSONmessageBuffer);
+  String payload = http.getString();
+
+  Serial.println(httpCode);
+  Serial.println(payload);
+
+  http.end();
+  ifttt_sent = true; //todo - need logic to get the http response before setting this flag.
+  Serial.println("IFTTT Trigger Sent");
+
 }
 
 void setup() {
@@ -86,7 +82,6 @@ void setup() {
   Serial.begin(115200);
   pinMode(pin_s1, INPUT_PULLUP);
   pinMode(4, OUTPUT);
-  ADC_MODE (ADC_VCC);
   digitalWrite(4, LOW);
   loadConfigFile();
 }
@@ -99,8 +94,6 @@ void loop() {
 
     if (millis() - client_timer >= client_interval) { //Only run this periodically based on client_interval
       client_timer = millis(); //reset the clock starting point
-      int vcc = ESP.getVcc();
-      Serial.println(vcc);
       if (WiFi.status() == WL_CONNECTED) { //Only run the following once we are connected to wifi
         if (strlen(mqtt_topic) != 0) { //check if we have a value stored for mqtt setting
           if (mqtt_sent == false) { //if we haven't published to mqtt, then publish to mqtt server
@@ -108,9 +101,9 @@ void loop() {
           }
         }
 
-        if (strlen(http_addr) != 0) { //check to see if there a value for the http address
-          if (http_sent == false) { //if we haven't sent an http webhook, then send one
-            sendHTTP();
+        if (strlen(ifttt_key) != 0) { //check to see if there a value for the http address
+          if (ifttt_sent == false) { //if we haven't sent an http webhook, then send one
+            sendIFTTT();
           }
         }
 
