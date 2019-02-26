@@ -55,7 +55,7 @@ void sendMQTT() {
 
 void sendIFTTT() {
 
-  int vcc = ESP.getVcc();
+  float vcc = ((float)ESP.getVcc())/1024;
   StaticJsonBuffer<100> jsonBuffer;
   JsonObject& JSONvoltage = jsonBuffer.createObject();
   JSONvoltage["value1"] = vcc;
@@ -102,7 +102,7 @@ void loop() {
         }
 
         if (strlen(ifttt_key) != 0) { //check to see if there a value for the http address
-          if (ifttt_sent == false) { //if we haven't sent an http webhook, then send one
+          if (ifttt_sent == false) { //if we haven't sent an i, then send one
             sendIFTTT();
           }
         }
