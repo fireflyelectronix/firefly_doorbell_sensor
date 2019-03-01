@@ -36,6 +36,14 @@ void sendMQTT() {
     client.setServer(mqtt_server, atoi(mqtt_port)); //setup the mqtt target server and port
   }
 
+  float vcc = ((float)ESP.getVcc())/1024;
+  StaticJsonBuffer<100> jsonBuffer;
+  JsonObject& JSONvoltage = jsonBuffer.createObject();
+  JSONvoltage["batt"] = vcc;
+  JSONvoltage.printTo(Serial);
+  char JSONmessageBuffer[100];
+  JSONvoltage.prettyPrintTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
+
   Serial.print("Attempting MQTT connection...");
     // Create the clientID using the ESP8266 Chip ID
   String clientId = "FireFlyClient-";
@@ -44,7 +52,7 @@ void sendMQTT() {
   if (client.connect(clientId.c_str(), mqtt_username, mqtt_password)) {
     Serial.println("MQTT connected");
     // Once connected, publish an announcement...
-    client.publish(mqtt_topic, "ring");
+    client.publish(mqtt_topic, JSONmessageBuffer);
     Serial.println("MQTT topic published");
     mqtt_sent = true;
   } else {
