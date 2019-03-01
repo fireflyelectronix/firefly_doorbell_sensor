@@ -1,5 +1,5 @@
-# WiFi Doorbell Sensor
-This is based on the WiFi Doorbell Sensor
+# WiFi Doorbell 
+This is the source code for the WiFi Doorbell from Firefly Electronix
 
 ### Steps required to setup Arduino IDE
 
@@ -13,4 +13,12 @@ This is based on the WiFi Doorbell Sensor
     1. Install ArduinoJson Library (tested with version 5.13.4)
     1. Install PubSubClient Library (tested with version 2.7.0)
 
+### Programming the WiFi Doorbell
+
 1. To program the WiFi Doorbell, press and hold SW1 prior to installing the battery. 
+
+1. The 4 pin header J2 is used for progamming. 
+    1. Pin 1 - VCC
+    1. Pin 2 - GND
+    1. Pin 3 - TX
+    1. Pin 4 - RX
