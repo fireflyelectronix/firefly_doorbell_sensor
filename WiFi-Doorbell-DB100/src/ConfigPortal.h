@@ -4,11 +4,12 @@
 #include <ArduinoJson.h>          //https://github.com/bblanchon/ArduinoJson
 
 //define your default values here, if there are different values in config.json, they are overwritten.
-char mqtt_server[40] = "mqtt.gbridge.kappelt.net";
-char mqtt_port[6] = "8883";
+char mqtt_server[100];
+char mqtt_port[6];
 char mqtt_username[20];
 char mqtt_password[20];
-char mqtt_topic[40];
+char mqtt_topic[100];
+char ifttt_key[40];
 
 //flag for saving data
 bool shouldSaveConfig = false;
@@ -19,12 +20,9 @@ void saveConfigCallback () {
   shouldSaveConfig = true;
 }
 
-//on demand configPortal
-void configPortal (){
-  //clean FS, for testing
-  //SPIFFS.format();
+void loadConfigFile() {
 
-  //read configuration from FS json
+  //read configuration from FS config.json file
   Serial.println("mounting FS...");
 
   if (SPIFFS.begin()) {
@@ -51,6 +49,7 @@ void configPortal (){
           strcpy(mqtt_username, json["mqtt_username"]);
           strcpy(mqtt_password, json["mqtt_password"]);
           strcpy(mqtt_topic, json["mqtt_topic"]);
+          strcpy(ifttt_key, json["ifttt_key"]);
 
         } else {
           Serial.println("failed to load json config");
@@ -61,18 +60,21 @@ void configPortal (){
   } else {
     Serial.println("failed to mount FS");
   }
-  //end read
+}
+//end read
 
-
+//on demand configPortal
+void configPortal (){
 
   // The extra parameters to be configured (can be either global or just in the setup)
   // After connecting, parameter.getValue() will get you the configured value
   // id/name placeholder/prompt default length
-  WiFiManagerParameter custom_mqtt_server("server", "mqtt server", mqtt_server, 40);
+  WiFiManagerParameter custom_mqtt_server("server", "mqtt server", mqtt_server, 100);
   WiFiManagerParameter custom_mqtt_port("port", "mqtt port", mqtt_port, 6);
-  WiFiManagerParameter custom_mqtt_username("username", "mqtt username", mqtt_username, 40);
-  WiFiManagerParameter custom_mqtt_password("password", "mqtt password", mqtt_password, 40);
-  WiFiManagerParameter custom_mqtt_topic("topic", "mqtt topic", mqtt_topic, 40);
+  WiFiManagerParameter custom_mqtt_username("username", "mqtt username", mqtt_username, 20);
+  WiFiManagerParameter custom_mqtt_password("password", "mqtt password", mqtt_password, 20);
+  WiFiManagerParameter custom_mqtt_topic("topic", "mqtt topic", mqtt_topic, 100);
+  WiFiManagerParameter custom_ifttt_key("ifttt", "ifttt key", ifttt_key, 40);
 
   //WiFiManager
   //Local intialization. Once its business is done, there is no need to keep it around
@@ -90,6 +92,7 @@ void configPortal (){
   wifiManager.addParameter(&custom_mqtt_username);
   wifiManager.addParameter(&custom_mqtt_password);
   wifiManager.addParameter(&custom_mqtt_topic);
+  wifiManager.addParameter(&custom_ifttt_key);
 
   //reset settings - for testing
   //wifiManager.resetSettings();
@@ -101,13 +104,13 @@ void configPortal (){
   //sets timeout until configuration portal gets turned off
   //useful to make it all retry or go to sleep
   //in seconds
-  wifiManager.setTimeout(180);
+  //wifiManager.setTimeout(180);
 
   //fetches ssid and pass and tries to connect
   //if it does not connect it starts an access point with the specified name
   //here  "AutoConnectAP"
   //and goes into a blocking loop awaiting configuration
-  if (!wifiManager.autoConnect("Firefly")) {
+  if (!wifiManager.startConfigPortal()) {
     Serial.println("failed to connect and hit timeout");
     delay(3000);
     //reset and try again, or maybe put it to deep sleep
@@ -124,6 +127,7 @@ void configPortal (){
   strcpy(mqtt_username, custom_mqtt_username.getValue());
   strcpy(mqtt_password, custom_mqtt_password.getValue());
   strcpy(mqtt_topic, custom_mqtt_topic.getValue());
+  strcpy(ifttt_key, custom_ifttt_key.getValue());
 
   //save the custom parameters to FS
   if (shouldSaveConfig) {
@@ -135,6 +139,7 @@ void configPortal (){
     json["mqtt_username"] = mqtt_username;
     json["mqtt_password"] = mqtt_password;
     json["mqtt_topic"] = mqtt_topic;
+    json["ifttt_key"] = ifttt_key;
 
     File configFile = SPIFFS.open("/config.json", "w");
     if (!configFile) {
