@@ -12,3 +12,5 @@ This is based on the WiFi Doorbell Sensor
 1.  Install Libraries Tools -> Manage Libraries -> Search -> Select Version -> click Install
     1. Install ArduinoJson Library (tested with version 5.13.4)
     1. Install PubSubClient Library (tested with version 2.7.0)
+
+1. To program the WiFi Doorbell, press and hold SW1 prior to installing the battery. 
