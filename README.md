@@ -1,6 +1,11 @@
 # WiFi Doorbell 
 This is the source code for the WiFi Doorbell from Firefly Electronix. Visit our website for more information. https://www.fireflyelectronix.com/product/wifidoorbell
 
+
+Software Roadmap
+- [ ] Support for OTA (Over-the-air) Updates
+- [ ] Support for TLS/SSL Secure Client
+
 ### Steps required to setup Arduino IDE
 
 1. Download and install Arduino IDE (tested with version 1.8.8)
