@@ -1,5 +1,5 @@
 # WiFi Doorbell 
-This is the source code for the WiFi Doorbell from Firefly Electronix
+This is the source code for the WiFi Doorbell from Firefly Electronix. Visit our website for more information. https://www.fireflyelectronix.com/product/wifidoorbell
 
 ### Steps required to setup Arduino IDE
 
