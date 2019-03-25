@@ -1,0 +1,6 @@
+sensor:
+  - platform: mqtt
+    state_topic: "ha/doorbell/notify"
+    value_template: '{{value_json.batt}}'
+    unit_of_measurement: "Volts"
+    name: "WiFi Doorbell"

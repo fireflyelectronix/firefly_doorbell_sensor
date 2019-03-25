@@ -1,0 +1,15 @@
+alias: Doorbell
+  trigger:
+  - platform: mqtt
+    topic: ha/doorbell/notify
+  condition: []
+  action:
+  - data:
+      data:
+        attachment:
+          content-type: jpeg
+        entity_id: camera.front
+        push:
+          category: camera
+      message: Doorbell Pressed
+    service: notify.ios_matts_iphone
