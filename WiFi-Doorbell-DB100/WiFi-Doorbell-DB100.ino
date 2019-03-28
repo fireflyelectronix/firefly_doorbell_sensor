@@ -52,7 +52,7 @@ void sendMQTT() {
   if (client.connect(clientId.c_str(), mqtt_username, mqtt_password)) {
     Serial.println("MQTT connected");
     // Once connected, publish an announcement...
-    client.publish(mqtt_topic, JSONmessageBuffer, true);
+    client.publish(mqtt_topic, JSONmessageBuffer);
     Serial.println("MQTT topic published");
     mqtt_sent = true;
   } else {
