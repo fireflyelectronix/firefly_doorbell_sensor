@@ -12,7 +12,7 @@
 
 #include "WiFiManager.h"
 
-const char sw_ver[10] = "1.0"; //software version
+const char sw_ver[10] = "1.1"; //software version
 
 WiFiManagerParameter::WiFiManagerParameter(const char *custom) {
   _id = NULL;
