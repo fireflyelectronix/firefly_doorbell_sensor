@@ -5,10 +5,10 @@
 
 //define your default values here, if there are different values in config.json, they are overwritten.
 char mqtt_server[100];
-char mqtt_port[6];
+char mqtt_port[6] = "1883"; //default mqtt port 
 char mqtt_username[20];
 char mqtt_password[20];
-char mqtt_topic[100];
+char mqtt_topic[100] = "doorbellsensor/status"; //default mqtt topic
 char ifttt_key[40];
 
 //flag for saving data
