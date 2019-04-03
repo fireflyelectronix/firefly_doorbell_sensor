@@ -44,19 +44,27 @@ void sendMQTT() {
   char JSONmessageBuffer[100];
   JSONvoltage.prettyPrintTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
 
-  Serial.print("Attempting MQTT connection...");
+  char batt_topic[100];
+  const char *battery = "/battery";
+  strcpy(batt_topic, mqtt_topic);
+  strcat(batt_topic, battery);
+  Serial.println(batt_topic);
+
+  Serial.print("MQTT: Attempting MQTT connection...");
     // Create the clientID using the ESP8266 Chip ID
   String clientId = "FireFlyClient-";
   clientId += String(random(0xffff), HEX);
   // Attempt to connect
   if (client.connect(clientId.c_str(), mqtt_username, mqtt_password)) {
-    Serial.println("MQTT connected");
+    Serial.println("MQTT: Connected");
     // Once connected, publish an announcement...
-    client.publish(mqtt_topic, JSONmessageBuffer, true);
-    Serial.println("MQTT topic published");
+    client.publish(batt_topic, JSONmessageBuffer, true);
+    Serial.println("MQTT: Battery Level Sent");
+    client.publish(mqtt_topic, "ON");
+    Serial.println("MQTT: Status Sent");
     mqtt_sent = true;
   } else {
-    Serial.println("MQTT Connection failed, rc=");
+    Serial.println("MQTT: Connection failed, rc=");
     Serial.print(client.state());
     }
 }
@@ -81,7 +89,7 @@ void sendIFTTT() {
 
   http.end();
   ifttt_sent = true; //todo - need logic to get the http response before setting this flag.
-  Serial.println("IFTTT Trigger Sent");
+  Serial.println("IFTTT: Trigger Sent");
 
 }
 
