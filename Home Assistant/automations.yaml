@@ -1,7 +1,7 @@
 alias: Doorbell
   trigger:
   - platform: mqtt
-    topic: ha/doorbell/notify
+    topic: doorbellsensor/status
   condition: []
   action:
   - data:
