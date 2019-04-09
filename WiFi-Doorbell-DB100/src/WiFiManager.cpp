@@ -12,7 +12,7 @@
 
 #include "WiFiManager.h"
 
-const char sw_ver[10] = "1.1"; //software version
+const char sw_ver[10] = "1.2"; //software version
 
 WiFiManagerParameter::WiFiManagerParameter(const char *custom) {
   _id = NULL;
@@ -153,6 +153,8 @@ void WiFiManager::setupConfigPortal() {
   server->on(String(F("/r")), std::bind(&WiFiManager::handleReset, this));
   //server->on("/generate_204", std::bind(&WiFiManager::handle204, this));  //Android/Chrome OS captive portal check.
   server->on(String(F("/fwlink")), std::bind(&WiFiManager::handleRoot, this));  //Microsoft captive portal. Maybe not needed. Might be handled by notFound handler.
+  server->on(String(F("/update")), std::bind(&WiFiManager::handleUpdate, this));
+  server->on(String(F("/u")), HTTP_POST, std::bind(&WiFiManager::handleUpdateDone, this), std::bind(&WiFiManager::handleUpdating, this));
   server->onNotFound (std::bind(&WiFiManager::handleNotFound, this));
   server->begin(); // Web server start
   DEBUG_WM(F("HTTP server started"));
@@ -442,15 +444,15 @@ void WiFiManager::handleRoot() {
   }
 
   String page = FPSTR(HTTP_HEAD);
-  page.replace("{v}", "Options");
+  page.replace("{v}", "Configure");
   page += FPSTR(HTTP_SCRIPT);
   page += FPSTR(HTTP_STYLE);
   page += _customHeadElement;
   page += FPSTR(HTTP_HEAD_END);
-  page += String(F("<h3>"));
-  page += _apName;
-  page += String(F("</h3>"));
-  //page += String(F("<h3>WiFiManager</h3>"));
+  //page += String(F("<h3>"));
+  //page += _apName;
+  //page += String(F("</h3>"));
+  page += F("<h3>WiFi Doorbell Sensor</h3>");
   page += FPSTR(HTTP_PORTAL_OPTIONS);
   page += FPSTR(HTTP_END);
 
@@ -463,10 +465,11 @@ void WiFiManager::handleRoot() {
 void WiFiManager::handleWifi(boolean scan) {
 
   String page = FPSTR(HTTP_HEAD);
-  page.replace("{v}", "Config Device");
+  page.replace("{v}", "Settings");
   page += FPSTR(HTTP_SCRIPT);
   page += FPSTR(HTTP_STYLE);
   page += _customHeadElement;
+  page += F("<h3>Choose a Network...</h3>");
   page += FPSTR(HTTP_HEAD_END);
 
   if (scan) {
@@ -533,7 +536,9 @@ void WiFiManager::handleWifi(boolean scan) {
             item.replace("{i}", "");
           }
           //DEBUG_WM(item);
+          page += "<ul>";
           page += item;
+          page += "</ul>";
           delay(0);
         } else {
           DEBUG_WM(F("Skipping due to quality"));
@@ -545,7 +550,6 @@ void WiFiManager::handleWifi(boolean scan) {
   }
 
   page += FPSTR(HTTP_FORM_START);
-  page += F("<b>MQTT/IFTTT Settings</b>");
   char parLength[5];
   // add the extra parameters to the form
   for (int i = 0; i < _paramsCount; i++) {
@@ -605,7 +609,6 @@ void WiFiManager::handleWifi(boolean scan) {
   }*/
 
   page += FPSTR(HTTP_FORM_END);
-  page += FPSTR(HTTP_SCAN_LINK);
 
   page += FPSTR(HTTP_END);
 
@@ -680,32 +683,26 @@ void WiFiManager::handleInfo() {
   DEBUG_WM(F("Info"));
 
   String page = FPSTR(HTTP_HEAD);
-  page.replace("{v}", "Info");
+  page.replace("{v}", "About");
   page += FPSTR(HTTP_SCRIPT);
   page += FPSTR(HTTP_STYLE);
   page += _customHeadElement;
   page += FPSTR(HTTP_HEAD_END);
   page += F("<dl>");
+  page += F("<dt>AP IP</dt><dd>");
+  page += WiFi.softAPIP().toString();
+  page += F("</dd>");
+  page += F("<dt>AP MAC</dt><dd>");
+  page += WiFi.softAPmacAddress();
+  page += F("</dd>");
+  page += F("<dt>Station MAC</dt><dd>");
+  page += WiFi.macAddress();
+  page += F("</dd>");
   page += F("<dt>Chip ID</dt><dd>");
   page += ESP.getChipId();
   page += F("</dd>");
   page += F("<dt>Flash Chip ID</dt><dd>");
   page += ESP.getFlashChipId();
-  page += F("</dd>");
-  page += F("<dt>IDE Flash Size</dt><dd>");
-  page += ESP.getFlashChipSize();
-  page += F(" bytes</dd>");
-  page += F("<dt>Real Flash Size</dt><dd>");
-  page += ESP.getFlashChipRealSize();
-  page += F(" bytes</dd>");
-  page += F("<dt>Soft AP IP</dt><dd>");
-  page += WiFi.softAPIP().toString();
-  page += F("</dd>");
-  page += F("<dt>Soft AP MAC</dt><dd>");
-  page += WiFi.softAPmacAddress();
-  page += F("</dd>");
-  page += F("<dt>Station MAC</dt><dd>");
-  page += WiFi.macAddress();
   page += F("</dd>");
   page += F("<dt>Software Version</dt><dd>");
   page += sw_ver;
@@ -735,10 +732,129 @@ void WiFiManager::handleReset() {
   server->sendHeader("Content-Length", String(page.length()));
   server->send(200, "text/html", page);
 
+  //Erose WiFi Credentials
+  WiFi.disconnect(true);
+
   DEBUG_WM(F("Sent reset page"));
   delay(3000);
   ESP.reset();
   delay(2000);
+}
+
+// Called when /update is requested
+void WiFiManager::handleUpdate() {
+	DEBUG_WM(F("<- Handle update"));
+	if (captivePortal()) return; // If captive portal redirect instead of displaying the page
+
+	//str.replace(FPSTR(T_v), configPortalActive ? _apName : WiFi.localIP().toString()); // use ip if ap is not active for heading
+	//page += str;
+  String page = FPSTR(HTTP_HEAD);
+  page.replace("{v}", "Update");
+
+  page += FPSTR(HTTP_STYLE);
+	page += FPSTR(HTTP_UPDATE);
+	page += FPSTR(HTTP_END);
+
+  server->sendHeader("Content-Length", String(page.length()));
+  server->send(200, "text/html", page);
+
+}
+
+// upload via /u POST
+void WiFiManager::handleUpdating(){
+  // @todo
+  // cannot upload files in captive portal, file select is not allowed, show message with link or hide
+  // cannot upload if softreset after upload, maybe check for hard reset at least for dev, ERROR[11]: Invalid bootstrapping state, reset ESP8266 before updating
+  // add upload status to webpage somehow
+  // abort upload if error detected ?
+  // [x] supress cp timeout on upload, so it doesnt keep uploading?
+  // add progress handler for debugging
+  // combine route handlers into one callback and use argument or post checking instead of mutiple functions maybe, if POST process else server upload page?
+  // [x] add upload checking, do we need too check file?
+  // convert output to debugger if not moving to example
+	if (captivePortal()) return; // If captive portal redirect instead of displaying the page
+  bool error = false;
+  unsigned long _configPortalTimeoutSAV = _configPortalTimeout; // store cp timeout
+  _configPortalTimeout = 0; // disable timeout
+
+  // handler for the file upload, get's the sketch bytes, and writes
+	// them through the Update object
+	HTTPUpload& upload = server->upload();
+
+  // UPLOAD START
+	if (upload.status == UPLOAD_FILE_START) {
+	  if(_debug) Serial.setDebugOutput(true);
+
+    #ifdef ESP8266
+    		WiFiUDP::stopAll();
+    		uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+    #elif defined(ESP32)
+          // Think we do not need to stop WiFIUDP because we haven't started a listener
+    		  uint32_t maxSketchSpace = (ESP.getFlashChipSize() - 0x1000) & 0xFFFFF000;
+    #endif
+
+    Serial.printf("Update: %s\r\n", upload.filename.c_str());
+
+  	if (!Update.begin(maxSketchSpace)) { // start with max available size
+  			Update.printError(Serial); // size error
+        error = true;
+  	}
+	}
+  // UPLOAD WRITE
+  else if (upload.status == UPLOAD_FILE_WRITE) {
+		Serial.print(".");
+		if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
+			Update.printError(Serial); // write failure
+      error = true;
+		}
+	}
+  // UPLOAD FILE END
+  else if (upload.status == UPLOAD_FILE_END) {
+		if (Update.end(true)) { // true to set the size to the current progress
+			Serial.printf("Updated: %u bytes\r\nRebooting...\r\n", upload.totalSize);
+		}
+    else {
+			Update.printError(Serial);
+      error = true;
+		}
+	}
+  // UPLOAD ABORT
+  else if (upload.status == UPLOAD_FILE_ABORTED) {
+		Update.end();
+		DEBUG_WM(F("[OTA] Update was aborted"));
+    error = true;
+  }
+  if(error) _configPortalTimeout = _configPortalTimeoutSAV;
+	delay(0);
+}
+
+// upload and ota done, show status
+void WiFiManager::handleUpdateDone() {
+	DEBUG_WM(F("<- Handle update done"));
+	if (captivePortal()) return; // If captive portal redirect instead of displaying the page
+
+	//str.replace(FPSTR(T_v), configPortalActive ? _apName : WiFi.localIP().toString()); // use ip if ap is not active for heading
+	//page += str;
+  String page = FPSTR(HTTP_HEAD);
+  page.replace("{v}", "Update Done");
+
+	if (Update.hasError()) {
+		page += FPSTR(HTTP_UPDATE_FAIL);
+		DEBUG_WM(F("[OTA] update failed"));
+	}
+	else {
+		page += FPSTR(HTTP_UPDATE_OK);
+		DEBUG_WM(F("[OTA] update ok"));
+	}
+	page += FPSTR(HTTP_END);
+
+  server->sendHeader("Content-Length", String(page.length()));
+  server->send(200, "text/html", page);
+
+	delay(1000); // send page
+	if (!Update.hasError()) {
+		ESP.restart();
+	}
 }
 
 void WiFiManager::handleNotFound() {
