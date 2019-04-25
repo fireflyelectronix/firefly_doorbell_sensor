@@ -4,8 +4,8 @@
 #include <ArduinoJson.h>          //https://github.com/bblanchon/ArduinoJson
 
 //define your default values here, if there are different values in config.json, they are overwritten.
-char mqtt_server[100];
-char mqtt_port[6] = "1883"; //default mqtt port 
+char hub_ip[100];
+char hub_port[6] = "1883"; //default mqtt port
 char mqtt_username[20];
 char mqtt_password[20];
 char mqtt_topic[100] = "doorbellsensor/status"; //default mqtt topic
@@ -44,8 +44,8 @@ void loadConfigFile() {
         if (json.success()) {
           Serial.println("\nparsed json");
 
-          strcpy(mqtt_server, json["mqtt_server"]);
-          strcpy(mqtt_port, json["mqtt_port"]);
+          strcpy(hub_ip, json["hub_ip"]);
+          strcpy(hub_port, json["hub_port"]);
           strcpy(mqtt_username, json["mqtt_username"]);
           strcpy(mqtt_password, json["mqtt_password"]);
           strcpy(mqtt_topic, json["mqtt_topic"]);
@@ -69,8 +69,8 @@ void configPortal (){
   // The extra parameters to be configured (can be either global or just in the setup)
   // After connecting, parameter.getValue() will get you the configured value
   // id/name placeholder/prompt default length
-  WiFiManagerParameter custom_mqtt_server("server", "mqtt server", mqtt_server, 100);
-  WiFiManagerParameter custom_mqtt_port("port", "mqtt port", mqtt_port, 6);
+  WiFiManagerParameter custom_hub_ip("hubip", "hub ip", hub_ip, 100);
+  WiFiManagerParameter custom_hub_port("hubport", "hub port", hub_port, 6);
   WiFiManagerParameter custom_mqtt_username("username", "mqtt username", mqtt_username, 20);
   WiFiManagerParameter custom_mqtt_password("password", "mqtt password", mqtt_password, 20);
   WiFiManagerParameter custom_mqtt_topic("topic", "mqtt topic", mqtt_topic, 100);
@@ -87,8 +87,8 @@ void configPortal (){
   //wifiManager.setSTAStaticIPConfig(IPAddress(10,0,1,99), IPAddress(10,0,1,1), IPAddress(255,255,255,0));
 
   //add all your parameters here
-  wifiManager.addParameter(&custom_mqtt_server);
-  wifiManager.addParameter(&custom_mqtt_port);
+  wifiManager.addParameter(&custom_hub_ip);
+  wifiManager.addParameter(&custom_hub_port);
   wifiManager.addParameter(&custom_mqtt_username);
   wifiManager.addParameter(&custom_mqtt_password);
   wifiManager.addParameter(&custom_mqtt_topic);
@@ -122,8 +122,8 @@ void configPortal (){
   Serial.println("connected...yeey :)");
 
   //read updated parameters
-  strcpy(mqtt_server, custom_mqtt_server.getValue());
-  strcpy(mqtt_port, custom_mqtt_port.getValue());
+  strcpy(hub_ip, custom_hub_ip.getValue());
+  strcpy(hub_port, custom_hub_port.getValue());
   strcpy(mqtt_username, custom_mqtt_username.getValue());
   strcpy(mqtt_password, custom_mqtt_password.getValue());
   strcpy(mqtt_topic, custom_mqtt_topic.getValue());
@@ -134,8 +134,8 @@ void configPortal (){
     Serial.println("saving config");
     DynamicJsonBuffer jsonBuffer;
     JsonObject& json = jsonBuffer.createObject();
-    json["mqtt_server"] = mqtt_server;
-    json["mqtt_port"] = mqtt_port;
+    json["hub_ip"] = hub_ip;
+    json["hub_port"] = hub_port;
     json["mqtt_username"] = mqtt_username;
     json["mqtt_password"] = mqtt_password;
     json["mqtt_topic"] = mqtt_topic;

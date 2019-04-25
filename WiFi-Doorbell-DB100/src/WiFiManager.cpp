@@ -12,7 +12,7 @@
 
 #include "WiFiManager.h"
 
-const char sw_ver[10] = "1.2"; //software version
+const char sw_ver[10] = "SmartThings-Dev"; //software version
 
 WiFiManagerParameter::WiFiManagerParameter(const char *custom) {
   _id = NULL;

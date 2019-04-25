@@ -20,20 +20,20 @@ unsigned long client_timer = 0;
 const long client_interval = 2000; //only run the http and mqtt clients every 2 seconds
 
 unsigned long loop_timer = 0;
-const long loop_interval = 8000; //run loop for 8 seconds then go to sleep
+const long loop_interval = 10000; //run loop for 10 seconds then go to sleep - setting to 30seconds now for testing
 
 bool ifttt_sent = false;
 bool mqtt_sent = false;
+bool st_sent = false;
 
 WiFiClient wifiClient;
 HTTPClient http;
 PubSubClient client(wifiClient);
 
-
 void sendMQTT() {
 
   if (!client.connected()) {
-    client.setServer(mqtt_server, atoi(mqtt_port)); //setup the mqtt target server and port
+    client.setServer(hub_ip, atoi(hub_port)); //setup the mqtt target server and port
   }
 
   float vcc = ((float)ESP.getVcc())/1024;
@@ -88,18 +88,73 @@ void sendIFTTT() {
   Serial.println(payload);
 
   http.end();
-  ifttt_sent = true; //todo - need logic to get the http response before setting this flag.
+  ifttt_sent = true;
   Serial.println("IFTTT: Trigger Sent");
 
 }
 
+void sendST() {
+
+    float vcc = ((float)ESP.getVcc())/1024;
+    StaticJsonBuffer<100> jsonBuffer;
+    JsonObject& JSONvoltage = jsonBuffer.createObject();
+    JSONvoltage["batt"] = vcc;
+    JSONvoltage.printTo(Serial);
+
+    wifiClient.stop();
+
+		if (wifiClient.connect(hub_ip, atol(hub_port)))
+		{
+			wifiClient.println(F("POST / HTTP/1.1"));
+			wifiClient.print(F("HOST: "));
+			wifiClient.print(hub_ip);
+			wifiClient.print(F(":"));
+			wifiClient.println(hub_port);
+			wifiClient.println(F("CONTENT-TYPE: application/json"));
+			wifiClient.print(F("CONTENT-LENGTH: "));
+			wifiClient.println(JSONvoltage.measureLength());
+			wifiClient.println();
+			JSONvoltage.printTo(wifiClient);
+      Serial.println(F("SmartThings Message Sent"));
+      st_sent = true;
+		}
+    else
+    {
+      Serial.println(F("SmartThings Connection Failed...Trying again"));
+
+      wifiClient.flush();
+			wifiClient.stop();
+			if (wifiClient.connect(hub_ip, atol(hub_port)))
+			{
+				wifiClient.println(F("POST / HTTP/1.1"));
+				wifiClient.print(F("HOST: "));
+				wifiClient.print(hub_ip);
+				wifiClient.print(F(":"));
+				wifiClient.println(hub_port);
+				wifiClient.println(F("CONTENT-TYPE: text"));
+				wifiClient.print(F("CONTENT-LENGTH: "));
+				wifiClient.println(JSONvoltage.measureLength());
+        wifiClient.println();
+        JSONvoltage.printTo(wifiClient);
+        Serial.println(F("SmartThings Message Sent"));
+        st_sent = true;
+			}
+
+    }
+
+		delay(1);
+		wifiClient.stop();
+
+}
+
 void setup() {
-  // put your setup code here, to run once:
+
   Serial.begin(115200);
   pinMode(pin_s1, INPUT_PULLUP);
   pinMode(4, OUTPUT);
   digitalWrite(4, LOW);
   loadConfigFile();
+  WiFi.begin();
 }
 
 void loop() {
@@ -111,9 +166,12 @@ void loop() {
     if (millis() - client_timer >= client_interval) { //Only run this periodically based on client_interval
       client_timer = millis(); //reset the clock starting point
       if (WiFi.status() == WL_CONNECTED) { //Only run the following once we are connected to wifi
-        if (strlen(mqtt_topic) != 0) { //check if we have a value stored for mqtt setting
+        if (strlen(hub_ip) != 0) { //check if we have a value stored for mqtt setting
           if (mqtt_sent == false) { //if we haven't published to mqtt, then publish to mqtt server
             sendMQTT();
+          }
+          if (st_sent == false) {
+            sendST();
           }
         }
 
@@ -126,13 +184,7 @@ void loop() {
       }
     }
 
-    //client.loop(); may not be needed since we do not need to subcribe to incomming messages.
-
     s1buttonState(); //check the state of the button
-
-    if (state_s1 == 5) {
-      //nothing here yet for short press. maybe for reset
-    }
 
     if (state_s1 == 6) {//if there is a long press, open config portal
       configPortal();
@@ -146,6 +198,7 @@ void loop() {
   delay(100); //the module likes to have a delay after sending deepsleep.
 
 }
+
 
 void s1buttonState(){
   val_s1 = digitalRead(pin_s1);
