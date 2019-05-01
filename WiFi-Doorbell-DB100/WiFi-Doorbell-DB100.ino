@@ -20,7 +20,7 @@ unsigned long client_timer = 0;
 const long client_interval = 2000; //only run the http and mqtt clients every 2 seconds
 
 unsigned long loop_timer = 0;
-const long loop_interval = 10000; //run loop for 10 seconds then go to sleep - setting to 30seconds now for testing
+const long loop_interval = 10000; //run loop for 10 seconds then go to sleep
 
 bool ifttt_sent = false;
 bool mqtt_sent = false;
@@ -166,15 +166,16 @@ void loop() {
     if (millis() - client_timer >= client_interval) { //Only run this periodically based on client_interval
       client_timer = millis(); //reset the clock starting point
       if (WiFi.status() == WL_CONNECTED) { //Only run the following once we are connected to wifi
-        if (strlen(hub_ip) != 0) { //check if we have a value stored for mqtt setting
+        if (strlen(mqtt_topic) != 0) { //check if we have a value stored for mqtt setting
           if (mqtt_sent == false) { //if we haven't published to mqtt, then publish to mqtt server
             sendMQTT();
           }
+        }
+        else if (strlen(hub_ip) != 0){
           if (st_sent == false) {
             sendST();
           }
         }
-
         if (strlen(ifttt_key) != 0) { //check to see if there a value for the http address
           if (ifttt_sent == false) { //if we haven't sent an i, then send one
             sendIFTTT();

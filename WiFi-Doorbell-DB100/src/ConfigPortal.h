@@ -12,7 +12,7 @@ char mqtt_topic[100] = "doorbellsensor/status"; //default mqtt topic
 char ifttt_key[40];
 
 //flag for saving data
-bool shouldSaveConfig = false;
+bool shouldSaveConfig = true;
 
 //callback notifying us of the need to save config
 void saveConfigCallback () {
